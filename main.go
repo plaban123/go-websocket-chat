@@ -3,13 +3,12 @@ package main
 import (
 	"flag"
 	"html/template"
-	"net/http"
 	"log"
+	"net/http"
 )
 
 var addr = flag.String("addr", ":8005", "http service address")
 var homeTemplate = template.Must(template.ParseFiles("home.html"))
-
 
 func serveHome(w http.ResponseWriter, r *http.Request) {
 	log.Println(r.URL)
@@ -28,7 +27,6 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
 	homeTemplate.Execute(w, r.Host)
 }
 
-
 func main() {
 	flag.Parse()
 	hub := newHub()
@@ -45,5 +43,3 @@ func main() {
 		log.Fatal("ListenAndServe: ", nil)
 	}
 }
-
-

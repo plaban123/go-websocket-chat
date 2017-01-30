@@ -1,34 +1,34 @@
 package main
 
 import (
-	"time"
+	"bytes"
 	"github.com/gorilla/websocket"
 	"log"
-	"bytes"
 	"net/http"
+	"time"
 )
 
 const (
-	writeWait = 10 * time.Second
-	pongWait = 10 * time.Second
-	pingPeriod = (pongWait * 9)/ 10
+	writeWait      = 10 * time.Second
+	pongWait       = 10 * time.Second
+	pingPeriod     = (pongWait * 9) / 10
 	maxMessageSize = 512
 )
 
 var (
 	newline = []byte("\n")
-	space = []byte(" ")
+	space   = []byte(" ")
 )
 
-var upgrader = websocket.Upgrader {
-	ReadBufferSize: 1024,
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
 
 type Client struct {
-	hub * Hub
+	hub  *Hub
 	conn *websocket.Conn
-	send chan[] byte
+	send chan []byte
 }
 
 func (c *Client) readPump() {
@@ -39,7 +39,7 @@ func (c *Client) readPump() {
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler((func(string) error {c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil }))
+	c.conn.SetPongHandler((func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil }))
 
 	for {
 		_, message, err := c.conn.ReadMessage()
@@ -58,7 +58,7 @@ func (c *Client) readPump() {
 
 }
 
-func (c *Client ) writePump() {
+func (c *Client) writePump() {
 
 	ticker := time.NewTicker(pingPeriod)
 
@@ -69,7 +69,7 @@ func (c *Client ) writePump() {
 
 	for {
 		select {
-		case message, ok := <- c.send:
+		case message, ok := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
@@ -89,14 +89,14 @@ func (c *Client ) writePump() {
 			// queued messages are added to the current websocket message
 			for i := 0; i < n; i++ {
 				w.Write(newline)
-				w.Write(<- c.send)
+				w.Write(<-c.send)
 			}
 
 			if err := w.Close(); err != nil {
 				return
 			}
 
-		case <- ticker.C:
+		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
 				return
@@ -105,7 +105,6 @@ func (c *Client ) writePump() {
 	}
 
 }
-
 
 func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
